@@ -5,7 +5,7 @@ import pygame
 import pygame.midi
 
 pygame.midi.init()
-keyboard = pygame.midi.Input(3, 1000)
+keyboard = pygame.midi.Input(1, 1000)
 
 rgb = [0, 0, 0]
 changed = False
@@ -16,14 +16,17 @@ changed = False
 mcu_port = "/dev/ttyACM0"
 mcu_baudrate = 115200
 
-MIDI_brightness = 176
+MIDI_brightness = 1
+MIDI_max_brightness = 2
+MIDI_min_brightness = 3
+MIDI_fade = 4
 
 # default parameters
 mode = 1
-bright = 0.5
-max_brightness = 200
-min_brightness = 10
-fade_speed = 0.4 # <= min_brightness
+bright = 0.2
+max_brightness = 255
+min_brightness = 1
+fade_speed = 1 # <= min_brightness
 
 # MIDI keyboard ranges
 range_red_start   = 20
@@ -60,9 +63,23 @@ with serial.Serial(port = mcu_port, baudrate = mcu_baudrate, timeout = 1) as con
                     rgb[2] = rgb[2] + power * bright
                     if rgb[2] > max_brightness:
                         rgb[2] = max_brightness
-            elif midi_data[0] == MIDI_brightness: # Brightness controller event
-                if midi_data[1] == 1:
+            elif midi_data[0] == 176:                 # Controller event
+                if midi_data[1] == MIDI_brightness:       # Brightness controller event
                     bright = midi_data[2] / 127
+                elif midi_data[1] == MIDI_max_brightness: # Max brightness controller event
+                    max_brightness = (midi_data[2] * 2) + 1
+                    if max_brightness < min_brightness:
+                        max_brightness = min_brightness + 1
+                elif midi_data[1] == MIDI_min_brightness: # Min brightness controller event
+                    min_brightness = (midi_data[2] * 2) - 1
+                    if min_brightness > max_brightness:
+                        min_brightness = max_brightness - 1
+                elif midi_data[1] == MIDI_fade:           # Fade speed controller event
+                    fade_speed = midi_data[2]
+                    if fade_speed > min_brightness:
+                        fade_speed = min_brightness
+                    
+
 
         if rgb[0] >= min_brightness:
             rgb[0] -= fade_speed
