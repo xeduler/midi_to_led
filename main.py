@@ -7,7 +7,7 @@ import pygame.midi
 pygame.midi.init()
 keyboard = pygame.midi.Input(1, 1000)
 
-rgb = [0, 0, 0]
+rgb = [0, 0, 0, 0]
 changed = False
 
 
@@ -36,6 +36,9 @@ range_green_end   = 75
 range_blue_start  = 75
 range_blue_end    = 108
 
+range_ceil_start  = 108
+range_ceil_end    = 110
+
 
 
 
@@ -63,6 +66,10 @@ with serial.Serial(port = mcu_port, baudrate = mcu_baudrate, timeout = 1) as con
                     rgb[2] = rgb[2] + power * bright
                     if rgb[2] > max_brightness:
                         rgb[2] = max_brightness
+                elif note > range_ceil_start and note <= range_ceil_end:
+                    rgb[3] = rgb[3] + power * bright
+                    if rgb[3] > max_brightness:
+                        rgb[3] = max_brightness
             elif midi_data[0] == 176:                 # Controller event
                 if midi_data[1] == MIDI_brightness:       # Brightness controller event
                     bright = midi_data[2] / 127
@@ -90,9 +97,12 @@ with serial.Serial(port = mcu_port, baudrate = mcu_baudrate, timeout = 1) as con
         if rgb[2] >= min_brightness:
             rgb[2] -= fade_speed
             changed = True
+        if rgb[3] >= min_brightness:
+            rgb[3] -= fade_speed
+            changed = True
         
         if changed == True:
-            colour = int(rgb[2]).to_bytes(1, "big") + int(rgb[0]).to_bytes(1, "big") + int(rgb[1]).to_bytes(1, "big") + mode.to_bytes(1, "big")
+            colour = int(rgb[3]).to_bytes(1, "big") + int(rgb[2]).to_bytes(1, "big") + int(rgb[0]).to_bytes(1, "big") + int(rgb[1]).to_bytes(1, "big") + mode.to_bytes(1, "big")
             controller.write(colour)
             changed = False
             #print(controller.read(3))
